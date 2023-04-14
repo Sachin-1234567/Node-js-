@@ -1,0 +1,65 @@
+const express = require('express');
+const router = express.Router();
+const FoodItem = require('../models/foodItem');
+
+// Get all food items or by type and/or max delivery time
+router.get('/food', async (req, res) => {
+  try {
+    let filter = {};
+    if (req.query.type) {
+      filter.foodType = req.query.type;
+    }
+    if (req.query.maxdeliverytime) {
+      filter.maxDeliveryTime = { $lte: req.query.maxdeliverytime };
+    }
+    const foodItems = await FoodItem.find(filter);
+    res.status(200).json(foodItems);
+  } catch (err) {
+    console.error(err.message);
+    res.status(500).send('Server Error');
+  }
+});
+
+// Get a food item by id
+router.get('/food/:id', async (req, res) => {
+  try {
+    const foodItem = await FoodItem.findById(req.params.id);
+    if (!foodItem) {
+      return res.status(404).json({ msg: 'Food item not found' });
+    }
+    res.status(200).json(foodItem);
+  } catch (err) {
+    console.error(err.message);
+    res.status(500).send('Server Error');
+  }
+});
+
+// Create a new food item
+router.post('/food', async (req, res) => {
+  try {
+    const { foodName, foodType, maxDeliveryTime, price } = req.body;
+    const foodItem = new FoodItem({
+      foodName,
+      foodType,
+      maxDeliveryTime,
+      price
+    });
+    await foodItem.save();
+    res.status(201).json(foodItem);
+  } catch (err) {
+    console.error(err.message);
+    if (err.name === 'ValidationError') {
+      return res.status(400).json({ msg: err.message });
+    }
+    res.status(500).send('Server Error');
+  }
+});
+
+// Update a food item by id
+router.put('/food/:id', async (req, res) => {
+  try {
+    const { foodName, foodType, maxDeliveryTime, price } = req.body;
+    const foodItem = await FoodItem.findByIdAndUpdate(
+      req.params.id,
+      { foodName, foodType, maxDeliveryTime, price },
+      { new:
